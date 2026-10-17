@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reproductor Vane</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #0d1117; color: #ffffff; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; position: relative; }
+    .app-container { display: flex; flex-direction: row; gap: 25px; width: 100%; max-width: 850px; background: rgba(255, 255, 255, 0.03); padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .player-card { flex: 1; display: flex; flex-direction: column; align-items: center; background: rgba(20, 25, 35, 0.6); padding: 25px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.05); }
+    
+    /* Disco celeste decorativo */
+    .album-art { 
+      width: 180px; 
+      height: 180px; 
+      border-radius: 50%; 
+      border: 4px solid #00d2ff; 
+      box-shadow: 0 0 20px rgba(0, 210, 255, 0.3); 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      margin-bottom: 20px; 
+      background: radial-gradient(circle, #87ceeb 35%, #00bfff 70%, #1a2232 100%);
+      position: relative;
+    }
+
+    /* Etiqueta central con la 𝓔🤍 */
+    .vinyl-center {
+      width: 85px;
+      height: 85px;
+      border-radius: 50%;
+      background-color: #00d2ff;
+      border: 3px solid #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #0d1117;
+      font-size: 2rem;
+      font-weight: bold;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+      gap: 2px;
+    }
+
+    .song-details { text-align: center; margin-bottom: 15px; }
+    .song-details h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; }
+    .song-details p { color: #98a6b5; font-size: 0.95rem; }
+    .audio-control-box { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 10px; }
+    .progress-container { width: 100%; display: flex; flex-direction: column; gap: 5px; }
+    input[type="range"] { width: 100%; accent-color: #00d2ff; cursor: pointer; }
+    .time-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #98a6b5; }
+    .main-controls { display: flex; align-items: center; gap: 20px; margin-top: 5px; }
+    .btn { background: none; border: none; color: #ffffff; font-size: 1.2rem; cursor: pointer; transition: transform 0.2s, color 0.2s; }
+    .btn:hover { color: #00d2ff; transform: scale(1.1); }
+    .btn-play { width: 50px; height: 50px; background: #ffffff; color: #0d1117; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.3rem; font-weight: bold; }
+    .btn-play:hover { background: #00d2ff; color: #ffffff; }
+    .lyrics-card { flex: 1.1; display: flex; flex-direction: column; background: rgba(20, 25, 35, 0.6); padding: 25px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.05); }
+    .lyrics-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 15px; }
+    .lyrics-header h3 { font-size: 1.1rem; font-weight: 600; color: #ffffff; }
+    .btn-translator { background: #00d2ff; color: #0d1117; border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; }
+    .btn-translator:hover { background: #33d8ff; transform: translateY(-2px); }
+    .lyrics-body { flex: 1; overflow-y: auto; padding-right: 10px; line-height: 2.2; font-size: 0.95rem; color: #98a6b5; max-height: 270px; }
+    .line { transition: color 0.3s, font-size 0.3s; cursor: pointer; }
+    .line.active { color: #00d2ff; font-weight: bold; font-size: 1.05rem; }
+    .lyrics-body::-webkit-scrollbar { width: 5px; }
+    .lyrics-body::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+
+    /* Firma en la esquina inferior derecha */
+    .signature {
+      position: fixed;
+      bottom: 20px;
+      right: 25px;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+      font-weight: 500;
+    }
+
+    @media (max-width: 650px) { .app-container { flex-direction: column; } }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <div class="player-card">
+      <div class="album-art">
+        <div class="vinyl-center">𝓔🤍</div>
+      </div>
+
+      <div class="song-details">
+        <h2>Congratulations</h2>
+        <p>Mac Miller</p>
+      </div>
+
+      <audio id="media-element" src="audio.mp4" preload="auto"></audio>
+
+      <div class="audio-control-box">
+        <div class="progress-container">
+          <input type="range" id="progress-bar" value="0" min="0" max="100" step="0.1">
+          <div class="time-labels">
+            <span id="current-time">0:00</span>
+            <span id="duration-time">0:00</span>
+          </div>
+        </div>
+
+        <div class="main-controls">
+          <button class="btn" onclick="skipTime(-5)" title="Atrasa 5 segundos">⏮</button>
+          <button class="btn btn-play" id="play-pause-btn" onclick="togglePlay()">▶</button>
+          <button class="btn" onclick="skipTime(5)" title="Adelanta 5 segundos">⏭</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="lyrics-card">
+      <div class="lyrics-header">
+        <h3 id="lyrics-title">Letra (Inglés)</h3>
+        <button class="btn-translator" onclick="toggleLanguage()">🌐 Traductor: Español</button>
+      </div>
+      <div class="lyrics-body" id="lyrics-content"></div>
+    </div>
+  </div>
+
+  <!-- Firma agregada en la esquina inferior derecha -->
+  <div class="signature">Vane🐝</div>
+
+  <script>
+    let currentLang = 'en';
+    const lyricsData = [
+      { time: 1.5,  en: "The sun doesn't shine when I'm alone",             es: "El sol no brilla cuando estoy solo" },
+      { time: 5.0,  en: "I lose my mind and I lose control",              es: "Pierdo la cabeza y pierdo el control" },
+      { time: 9.0,  en: "I see your eyes look through my soul",             es: "Veo que tus ojos miran a través de mi alma" },
+      { time: 13.0, en: "Don't be surprised, this all I know",             es: "No te sorprendas, esto es todo lo que sé" },
+      { time: 17.0, en: "I felt the heights and they feel like you",      es: "Sentí las alturas y se sienten como tú" },
+      { time: 21.0, en: "See, a love like mine's too good to be true",    es: "Ves, un amor como el mío es demasiado bueno para ser verdad" },
+      { time: 24.5, en: "And you too divine to just be mine",              es: "Y eres demasiado divina para ser mía" },
+      { time: 28.5, en: "You remind me of the color blue",                es: "Me recuerdas al color azul" },
+      { time: 32.0, en: "Girl, I'm so in love with you",                  es: "Chica, estoy muy enamorado de ti" }
+    ];
+
+    const media = document.getElementById('media-element');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationTimeEl = document.getElementById('duration-time');
+    const lyricsContainer = document.getElementById('lyrics-content');
+    const lyricsTitle = document.getElementById('lyrics-title');
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    media.addEventListener('loadedmetadata', () => {
+      durationTimeEl.textContent = formatTime(media.duration);
+      progressBar.max = media.duration;
+    });
+
+    function togglePlay() {
+      if (media.paused) { media.play(); playPauseBtn.textContent = '⏸'; }
+      else { media.pause(); playPauseBtn.textContent = '▶'; }
+    }
+
+    function skipTime(seconds) {
+      media.currentTime = Math.min(Math.max(media.currentTime + seconds, 0), media.duration);
+    }
+
+    progressBar.addEventListener('input', () => { media.currentTime = progressBar.value; });
+
+    function renderLyricsStructure() {
+      lyricsContainer.innerHTML = '';
+      lyricsData.forEach((item, index) => {
+        const p = document.createElement('p');
+        p.className = 'line';
+        p.id = `line-${index}`;
+        p.textContent = currentLang === 'en' ? item.en : item.es;
+        p.onclick = () => { media.currentTime = item.time; media.play(); playPauseBtn.textContent = '⏸'; };
+        lyricsContainer.appendChild(p);
+      });
+    }
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'en' ? 'es' : 'en';
+      lyricsTitle.textContent = currentLang === 'en' ? 'Letra (Inglés)' : 'Letra (Español)';
+      renderLyricsStructure();
+    }
+
+    media.addEventListener('timeupdate', () => {
+      progressBar.value = media.currentTime;
+      currentTimeEl.textContent = formatTime(media.currentTime);
+      const currentTime = media.currentTime;
+      let activeIndex = 0;
+      for (let i = 0; i < lyricsData.length; i++) {
+        if (currentTime >= lyricsData[i].time) { activeIndex = i; }
+      }
+      document.querySelectorAll('.line').forEach((el, idx) => {
+        if (idx === activeIndex) { el.classList.add('active'); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        else { el.classList.remove('active'); }
+      });
+    });
+
+    media.addEventListener('ended', () => { playPauseBtn.textContent = '▶'; });
+    renderLyricsStructure();
+  </script>
+</body>
+</html>
